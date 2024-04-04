@@ -49,7 +49,7 @@ from threading import Thread
 
 from impacket import version
 from impacket.examples import logger
-from impacket.examples.ntlmrelayx.servers import SMBRelayServer, HTTPRelayServer, WCFRelayServer, RAWRelayServer
+from impacket.examples.ntlmrelayx.servers import SMBRelayServer, HTTPRelayServer, WCFRelayServer, RAWRelayServer, WinRMRelayServer
 from impacket.examples.ntlmrelayx.utils.config import NTLMRelayxConfig, parse_listening_ports
 from impacket.examples.ntlmrelayx.utils.targetsutils import TargetsProcessor, TargetsFileWatcher
 from impacket.examples.ntlmrelayx.servers.socksserver import SOCKS
@@ -227,6 +227,8 @@ def start_servers(options, threads):
                 sleep(0.1)
             continue
 
+        elif server is WinRMRelayServer:
+            c.setListeningPort(options.winrm_port)
         elif server is SMBRelayServer:
             c.setListeningPort(options.smb_port)
         elif server is WCFRelayServer:
@@ -284,11 +286,13 @@ if __name__ == '__main__':
     serversoptions.add_argument('--no-http-server', action='store_true', help='Disables the HTTP server')
     serversoptions.add_argument('--no-wcf-server', action='store_true', help='Disables the WCF server')
     serversoptions.add_argument('--no-raw-server', action='store_true', help='Disables the RAW server')
+    serversoptions.add_argument('--no-winrm-server', action='store_true', help='Disables the WinRM server')
 
     parser.add_argument('--smb-port', type=int, help='Port to listen on smb server', default=445)
     parser.add_argument('--http-port', help='Port(s) to listen on HTTP server. Can specify multiple ports by separating them with `,`, and ranges with `-`. Ex: `80,8000-8010`', default="80")
     parser.add_argument('--wcf-port', type=int, help='Port to listen on wcf server', default=9389)  # ADWS
     parser.add_argument('--raw-port', type=int, help='Port to listen on raw server', default=6666)
+    parser.add_argument('--winrm-port', type=int, help='Port to listen on WinRM server', default=5985)  # ADWS
 
     parser.add_argument('--no-multirelay', action="store_true", required=False, help='If set, disable multi-host relay (SMB and HTTP servers)')
     parser.add_argument('-ra','--random', action='store_true', help='Randomize target selection')
@@ -469,6 +473,9 @@ if __name__ == '__main__':
 
         if options.r is not None:
             logging.info("Running HTTP server in redirect mode")
+
+    if not options.no_winrm_server:
+        RELAY_SERVERS.append(WinRMRelayServer)
 
     if not options.no_wcf_server:
         RELAY_SERVERS.append(WCFRelayServer)
